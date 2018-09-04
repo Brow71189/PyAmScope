@@ -23,6 +23,7 @@ import numpy as np
 import logging
 import os
 import queue
+from pathlib import Path
 
 class Buffer(queue.Queue):
     def __init__(self, maxsize=0):
@@ -42,16 +43,15 @@ class Toupcam:
     def __init__(self, buffer=None):
         # Check operating system and load library
         # for Windows
+        self.driver_path = os.path.join(str(Path.home()), 'PyAmScope')
         if platform.system() == "Windows":
-            if platform.architecture()[0] == "32bit":
-                self.dll = WinDLL("C:\\Program Files\\Andor SOLIS\\Drivers\\atmcd32d")
-            else:
-                self.dll = WinDLL("C:/Users/Andi/Downloads/sdk_20170419/toupcamsdk/win/x64/toupcam.dll")
+            self.is_windows = True
+            self.dll = WinDLL(os.path.join(self.driver_path, 'toupcam.dll'))
 
         # for Linux
         elif platform.system() == "Linux":
-            dllname = "/usr/local/lib/libandor.so"
-            self.dll = cdll.LoadLibrary(dllname)
+            self.is_windows = False
+            self.dll = cdll.LoadLibrary(os.path.join(self.driver_path, 'libtoupcam.so'))
             #self.dll = DummyDLL(self)
         else:
             logging.error("Cannot detect operating system, wil now stop")
