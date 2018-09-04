@@ -15,7 +15,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import platform
-from ctypes import WinDLL, cdll, c_int, c_float, c_uint, c_void_p, byref, POINTER, CFUNCTYPE, create_string_buffer, Structure
+from ctypes import cdll, c_int, c_float, c_uint, c_void_p, byref, POINTER, CFUNCTYPE, create_string_buffer, Structure
 from PIL import Image
 import sys
 import time
@@ -45,6 +45,7 @@ class Toupcam:
         # for Windows
         self.driver_path = os.path.join(str(Path.home()), 'PyAmScope')
         if platform.system() == "Windows":
+            from ctypes import WinDLL
             self.is_windows = True
             self.dll = WinDLL(os.path.join(self.driver_path, 'toupcam.dll'))
 
