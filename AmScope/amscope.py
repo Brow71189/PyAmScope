@@ -121,8 +121,7 @@ class Toupcam:
             
     def Toupcam_Stop(self):
         if self.cam:
-            res = self.dll.Toupcam_Stop()
-            print(res)
+            res = self.dll.Toupcam_Stop(self.cam)
             
     def Toupcam_get_Size(self):
         if self.cam:
