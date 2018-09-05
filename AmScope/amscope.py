@@ -15,7 +15,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import platform
-from ctypes import cdll, c_int, c_float, c_uint, c_void_p, byref, POINTER, CFUNCTYPE, create_string_buffer, Structure
+from ctypes import cdll, c_int, c_float, c_ushort, c_uint, c_void_p, byref, POINTER, CFUNCTYPE, create_string_buffer, Structure
 from PIL import Image
 import sys
 import time
@@ -23,6 +23,7 @@ import numpy as np
 import logging
 import os
 import queue
+import threading
 from pathlib import Path
 
 class Buffer(queue.Queue):
@@ -67,6 +68,8 @@ class Toupcam:
 #        if error != 'DRV_SUCCESS':
 #            raise RuntimeError(error)
         self.Toupcam_Open()
+        # set maximum auto exposure time to 2s
+        self.Toupcam_put_MaxAutoExpoTimeAGain(2000000, 500)
         
     def Toupcam_Open(self):
         class myPythonAPI(Structure):
@@ -132,16 +135,40 @@ class Toupcam:
             self.dll.Toupcam_get_Size(self.cam, byref(width), byref(height))
             self.width = width.value
             self.height = height.value
+    
+    def Toupcam_get_ExpoTime(self):
+        if self.cam:
+            exp_time = c_uint()
+            res = self.dll.Toupcam_get_ExpoTime(self.cam, byref(exp_time))
+            return time.value
+        
+    def Toupcam_put_MaxAutoExpoTimeAGain(self, max_time, max_a_gain):
+        if self.cam:
+            c_max_time = c_uint(max_time)
+            c_max_a_gain = c_ushort(max_a_gain)
+            res = self.dll.Toupcam_put_MaxAutoExpoTimeAGain(self.cam, c_max_time, c_max_a_gain)
             
     def callback_function(self, eventID):
         if eventID == TOUPCAM_EVENT_IMAGE:
             self.Toupcam_PullImage()
             
     def start_live(self):
+        if not self.windows:
+            exposure_time = self.Toupcam_get_ExpoTime()
+            self.stop_event = threading.Event()
+            def call_callback():
+                while not self.stop_event.wait(exposure_time/1e6):
+                    callback_function(TOUPCAM_EVENT_IMAGE)
+            self.callback_thread = threading.Thread(call_callback)
         self.Toupcam_StartPullModeWithCallback(self.callback_function)
+        if not self.windows:
+                self.callback_thread.start()
     
     def stop_live(self):
         self.Toupcam_Stop()
+        if not self.is_windows:
+            self.stop_event.set()
+            self.callback_thread.join(1)
     
 TOUPCAM_EVENT_EXPOSURE = 0x0001    #/* exposure time changed */
 TOUPCAM_EVENT_TEMPTINT = 0x0002    #/* white balance changed, Temp/Tint mode */
