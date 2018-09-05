@@ -159,7 +159,7 @@ class Toupcam:
             def call_callback():
                 while not self.stop_event.wait(exposure_time/1e6):
                     callback_function(TOUPCAM_EVENT_IMAGE)
-            self.callback_thread = threading.Thread(call_callback)
+            self.callback_thread = threading.Thread(target=call_callback)
         self.Toupcam_StartPullModeWithCallback(self.callback_function)
         if not self.is_windows:
                 self.callback_thread.start()
