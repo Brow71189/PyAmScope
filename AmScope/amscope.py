@@ -140,7 +140,7 @@ class Toupcam:
         if self.cam:
             exp_time = c_uint()
             res = self.dll.Toupcam_get_ExpoTime(self.cam, byref(exp_time))
-            return time.value
+            return exp_time.value
         
     def Toupcam_put_MaxAutoExpoTimeAGain(self, max_time, max_a_gain):
         if self.cam:
